@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:websocket="net.gimite.websocket.*"
+			   width="1038">
+	
+	<fx:Script>
+		<![CDATA[
+			import org.atmosphere.Atmosphere;
+			import org.atmosphere.AtmosphereEvent;
+			import org.atmosphere.AtmosphereSetting;
+						
+			protected var atmo:Atmosphere;
+			
+			protected function connect(event:MouseEvent):void {
+				if (atmo) {
+					atmo.close();
+					atmo.removeEventListener(AtmosphereEvent.onMessage, atmoEvent);
+					atmo.removeEventListener(AtmosphereEvent.onOpen, atmoEvent);
+					atmo.removeEventListener(AtmosphereEvent.onReopen, atmoEvent);
+					atmo.removeEventListener(AtmosphereEvent.onReconnect, atmoEvent);
+					atmo.removeEventListener(AtmosphereEvent.onError, atmoEvent);
+					atmo.removeEventListener(AtmosphereEvent.onClose, atmoEvent);
+					atmo.removeEventListener(AtmosphereEvent.onClientTimeout, atmoEvent);
+					atmo.removeEventListener(AtmosphereEvent.onMessagePublished, atmoEvent);
+					var s:String = atmo.uuid;
+				}
+				var flexAtmosphereSetting:AtmosphereSetting = new AtmosphereSetting();
+				flexAtmosphereSetting.url = wsUrl.text;
+				flexAtmosphereSetting.transport = [Atmosphere.TRANSPORT_LONG_POLLING];
+				atmo = new Atmosphere(flexAtmosphereSetting);
+				atmo.addEventListener(AtmosphereEvent.onMessage, atmoEvent);
+				atmo.addEventListener(AtmosphereEvent.onOpen, atmoEvent);
+				atmo.addEventListener(AtmosphereEvent.onReopen, atmoEvent);
+				atmo.addEventListener(AtmosphereEvent.onReconnect, atmoEvent);
+				atmo.addEventListener(AtmosphereEvent.onError, atmoEvent);
+				atmo.addEventListener(AtmosphereEvent.onClose, atmoEvent);
+				atmo.addEventListener(AtmosphereEvent.onClientTimeout, atmoEvent);
+				atmo.addEventListener(AtmosphereEvent.onMessagePublished, atmoEvent);
+			}
+			
+			protected function send(event:MouseEvent):void
+			{
+				var o:Object = {};
+				o.time = (new Date()).time;
+				o.message = wsChat.text;
+				o.author = "ASclient";
+				atmo.push(JSON.stringify(o));
+			}
+			
+			protected function atmoEvent(event:AtmosphereEvent):void
+			{
+				if (event.type == AtmosphereEvent.onMessage) {
+					var o:Object = JSON.parse(event.msg);
+					ta.text = o.author + " @ " + (new Date(o.time)) + " : " + o.message + '\n' + ta.text;
+				} 
+				trace(event);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:TextInput id="wsUrl" y="10" left="10" right="88"
+				 text="http://localhost:8080/atmosphere-chat-2.2.3/chat"/>
+	<s:Button y="11" right="10" label="Connect" click="connect(event)"/>
+	<s:TextInput id="wsChat" y="40" left="10" right="88" text="blabla"/>
+	<s:Button y="41" right="10" label="Send" click="send(event)"/>
+	<s:TextArea id="ta" left="10" right="12" top="70" bottom="10"/>
+</s:Application>
