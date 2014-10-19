@@ -28,7 +28,7 @@
 				}
 				var flexAtmosphereSetting:AtmosphereSetting = new AtmosphereSetting();
 				flexAtmosphereSetting.url = wsUrl.text;
-				flexAtmosphereSetting.transport = [Atmosphere.TRANSPORT_LONG_POLLING];
+				flexAtmosphereSetting.heartbeat = 5;
 				atmo = new Atmosphere(flexAtmosphereSetting);
 				atmo.addEventListener(AtmosphereEvent.onMessage, atmoEvent);
 				atmo.addEventListener(AtmosphereEvent.onOpen, atmoEvent);
