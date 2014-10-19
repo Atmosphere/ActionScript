@@ -140,9 +140,9 @@ package org.atmosphere
 			if (setting.useBinary) {
 				var bt:ByteArray = new ByteArray();
 				bt.writeUTF(message is String ? message as String : JSON.stringify(message));
-				pushBinary(bt);
+				pushBinary(bt, false);
 			} else
-				pushString(message is String ? message : JSON.stringify(message));
+				pushString(message is String ? message : JSON.stringify(message), false);
 		}
 		
 		public function get uuid():String {
@@ -233,17 +233,17 @@ package org.atmosphere
 			connect();
 		}
 
-		protected function pushString(message:String):void {
+		protected function pushString(message:String, isInternal:Boolean):void {
 			if (wsObj) {
-				if (wsObj.send(message))
+				if (wsObj.send(message) && !isInternal)
 					dispatchMsgPublished(message);
 			} else if (hsReceive)
-				hsPushMsg(message);
+				hsPushMsg(message, isInternal);
 		}
 
-		protected function pushBinary(message:ByteArray):void {
+		protected function pushBinary(message:ByteArray, isInternal:Boolean):void {
 			if (wsObj)
-				if (wsObj.send(message))
+				if (wsObj.send(message) && !isInternal)
 					dispatchMsgPublished(message);
 			//else if (hsReceive)
 				//hsPushMsg(message);
@@ -418,13 +418,15 @@ package org.atmosphere
 			return true;
 		}
 
-		private function hsPushMsg(message:String):void {
+		private function hsPushMsg(message:String, isInternal:Boolean):void {
 			var request:URLRequest = new URLRequest(formatUrlForHs(cUrl, TRANSPORT_POLLING));
 			request.data = message;
 			request.method = URLRequestMethod.POST;
 			var receive:URLLoader = new URLLoader();
-			var sendOnSuccess:Function = function (event:Event):void {dispatchMsgPublished(message);};
-			receive.addEventListener(Event.COMPLETE, dispatchMsgPublished);
+			if (!isInternal) {
+				var sendOnSuccess:Function = function (event:Event):void {dispatchMsgPublished(message);};
+				receive.addEventListener(Event.COMPLETE, dispatchMsgPublished);
+			}
 			try {
 				receive.load(request);
 			} catch (error:Error) {
@@ -437,8 +439,8 @@ package org.atmosphere
 				clearInterval(cHeartbeatTimer);
 			cHeartbeatTimer = 0;
 			if (enable && cHeartbeatInterval) {
-				pushString(cHeartbeatString);
-				cAckTimer = setInterval(pushString, cHeartbeatInterval * MILLISINASECOND, cHeartbeatString);
+				pushString(cHeartbeatString, true);
+				cAckTimer = setInterval(pushString, cHeartbeatInterval * MILLISINASECOND, cHeartbeatString, true);
 			}
 		}
 		
@@ -447,7 +449,7 @@ package org.atmosphere
 				clearInterval(cAckTimer);
 			cAckTimer = 0;
 			if (enable && setting.ackIntervall)
-				cAckTimer = setInterval(pushString, setting.ackIntervall * MILLISINASECOND, DEF_ACK);
+				cAckTimer = setInterval(pushString, setting.ackIntervall * MILLISINASECOND, DEF_ACK, true);
 		}
 		
 		//main message parsing
